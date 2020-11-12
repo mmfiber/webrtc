@@ -7,11 +7,15 @@ btn.addEventListener("click", onclickBtn)
 
 const cosntraints ={
   video: true,
+  // video: {
+  //     height: { ideal: 200 },
+  //     width: { ideal: 900 }
+  // },
   audio: true
 }
 
-function onclickBtn() {
-  const inputStream = navigator.mediaDevices.getUserMedia(cosntraints)
+async function onclickBtn() {
+  const inputStream = await navigator.mediaDevices.getUserMedia(cosntraints)
     .then(playAndGetVideoInputStream)
   const canvasStream = drawAndGetCanvasStream(inputStream)
   playOutput(canvasStream)
@@ -23,14 +27,28 @@ function playAndGetVideoInputStream(stream) {
 }
 
 function drawAndGetCanvasStream(stream) {
+  const videoTrack = stream.getTracks().filter(t => t.kind === "video")[0]
+  const {width, height} = videoTrack.getSettings()
+
+  const shouldFitImageVertivcally = height / width > 90 / 160
+  const ratio = shouldFitImageVertivcally ? 90 / height : 160 / width
+  const scaledWidth = width * ratio
+  const scaledHeight = height * ratio
+
+  const dx = (160 - scaledWidth) / 2
+  const dy = (90 - scaledHeight) / 2
   const ctx = canvas.getContext("2d")
-  // todo 
-  // 160 * 90 の canvas obj を作る（黒塗り）
-  // video_input の内容をcanvas objに貼り付ける
-  //   比率を計算(4:x)
-  //     x > 3  : 縦に合わせる
-  //     x <= 3 : 横に合わせる
-  const handler = setInterval(() => ctx.drawImage(video_input, 0, 0, 160, 90))
+  const handler = setInterval(() => {
+    ctx.fillRect(0, 0 ,160, 90)
+    // http://www.htmq.com/canvas/drawImage_s.shtml
+    ctx.drawImage(
+      video_input,
+      0, 0,
+      width, height,
+      dx, dy,
+      scaledWidth, scaledHeight
+    )
+  })
   return canvas.captureStream(30)
 } 
 
